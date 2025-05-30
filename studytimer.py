@@ -1,119 +1,50 @@
-import tkinter as tk
-from tkinter import messagebox
-from tkinter import ttk
+import streamlit as st
 import time
-import threading
-from playsound import playsound
 
-def play_sound():
-    try:
-        playsound("ding.mp3")
-    except:
-        print("🔇 فشل تشغيل الصوت")
+st.set_page_config(page_title="منبه الدراسة - Pomodoro", page_icon="📚", layout="centered")
+st.title("📚 منبه الدراسة - Pomodoro")
 
-def alert(msg):
-    messagebox.showinfo("🚨 تنبيه", msg)
-    threading.Thread(target=play_sound).start()
+st.markdown("""
+<style>
+    .stButton > button {
+        background-color: #4CAF50;
+        color: white;
+        font-size: 16px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-def start_timer(study_min, break_min, total_minutes):
-    def run():
-        sessions = total_minutes // (study_min + break_min)
-        for session in range(sessions):
-            update_status(f"🧠 دراسة {study_min} دقيقة")
-            countdown(study_min * 60)
-            alert("خلصت الدراسة! خذ بريك ☕")
+st.markdown("---")
 
-            update_status(f"😌 بريك {break_min} دقيقة")
-            countdown(break_min * 60)
-            alert("خلص البريك! يلا نكمل 💪")
+# مدخلات الوقت
+col1, col2 = st.columns(2)
+study_hours = col1.number_input("كم مدة الدراسة؟ (بالساعات)", min_value=0, max_value=12, step=1)
+study_minutes = col2.number_input("كم مدة الدراسة؟ (بالدقائق)", min_value=0, max_value=59, step=1)
 
-        update_status("🎉 خلصت كل الجلسات! فخور فيك 👏")
-        alert("انتهى كل شيء! ✨")
+col3, col4 = st.columns(2)
+break_hours = col3.number_input("كم مدة البريك؟ (بالساعات)", min_value=0, max_value=3, step=1)
+break_minutes = col4.number_input("كم مدة البريك؟ (بالدقائق)", min_value=0, max_value=59, step=1)
 
-    threading.Thread(target=run).start()
+total_study_min = study_hours * 60 + study_minutes
+total_break_min = break_hours * 60 + break_minutes
 
-def countdown(seconds):
-    progress["maximum"] = seconds
-    while seconds:
-        mins, secs = divmod(seconds, 60)
-        timer_display.config(text=f"{mins:02d}:{secs:02d}")
-        progress["value"] = progress["maximum"] - seconds
-        time.sleep(1)
-        seconds -= 1
-    timer_display.config(text="00:00")
-    progress["value"] = 0
+def countdown(minutes, label):
+    with st.empty():
+        total_secs = minutes * 60
+        for sec in range(total_secs, -1, -1):
+            mins, secs = divmod(sec, 60)
+            timer_str = f"{mins:02d}:{secs:02d}"
+            st.subheader(f"⏳ {label}: {timer_str}")
+            time.sleep(1)
 
-def update_status(text):
-    status_label.config(text=text)
-
-def on_start():
-    try:
-        study_total = int(study_hours.get()) * 60 + int(study_minutes.get())
-        break_total = int(break_hours.get()) * 60 + int(break_minutes.get())
-        total_hours = float(total_time_entry.get())
-        total_minutes = int(total_hours * 60)
-        start_timer(study_total, break_total, total_minutes)
-    except ValueError:
-        messagebox.showwarning("⚠️ خطأ", "تأكد أنك اخترت القيم بشكل صحيح")
-
-# === واجهة البرنامج ===
-root = tk.Tk()
-root.title("📚 منبه الدراسة الذكي")
-root.geometry("420x500")
-root.configure(bg="white")
-root.resizable(False, False)
-
-font_main = ("Helvetica", 14)
-font_big = ("Helvetica", 36, "bold")
-
-# ===== إعداد الوقت الكلي =====
-tk.Label(root, text="⏱️ كم ساعة تبي تذاكر؟", font=font_main, bg="white", fg="black").pack(pady=5)
-total_time_entry = tk.Entry(root, font=font_main, justify="center", width=10)
-total_time_entry.insert(0, "2")
-total_time_entry.pack(pady=5)
-
-# ===== اختيار وقت الدراسة =====
-tk.Label(root, text="✏️ وقت الجلسة الدراسية:", font=font_main, bg="white", fg="black").pack(pady=5)
-frame_study = tk.Frame(root, bg="white")
-frame_study.pack()
-
-study_hours = tk.StringVar(value="0")
-study_minutes = tk.StringVar(value="25")
-
-tk.OptionMenu(frame_study, study_hours, *[str(i) for i in range(13)]).pack(side="left", padx=5)
-tk.Label(frame_study, text="ساعات", bg="white").pack(side="left")
-
-tk.OptionMenu(frame_study, study_minutes, *[str(i) for i in range(60)]).pack(side="left", padx=5)
-tk.Label(frame_study, text="دقايق", bg="white").pack(side="left")
-
-# ===== اختيار وقت البريك =====
-tk.Label(root, text="☕ وقت البريك:", font=font_main, bg="white", fg="black").pack(pady=5)
-frame_break = tk.Frame(root, bg="white")
-frame_break.pack()
-
-break_hours = tk.StringVar(value="0")
-break_minutes = tk.StringVar(value="5")
-
-tk.OptionMenu(frame_break, break_hours, *[str(i) for i in range(13)]).pack(side="left", padx=5)
-tk.Label(frame_break, text="ساعات", bg="white").pack(side="left")
-
-tk.OptionMenu(frame_break, break_minutes, *[str(i) for i in range(60)]).pack(side="left", padx=5)
-tk.Label(frame_break, text="دقايق", bg="white").pack(side="left")
-
-# ===== زر البدء =====
-start_btn = tk.Button(root, text="🚀 ابدأ", font=font_main, bg="#4CAF50", fg="white", command=on_start)
-start_btn.pack(pady=15)
-
-# ===== المؤقت و شريط التقدم =====
-tk.Label(root, text="⏰", font=("Helvetica", 30), bg="white").pack()
-
-timer_display = tk.Label(root, text="00:00", font=font_big, fg="#0077CC", bg="white")
-timer_display.pack(pady=5)
-
-progress = ttk.Progressbar(root, orient="horizontal", length=300, mode="determinate")
-progress.pack(pady=10)
-
-status_label = tk.Label(root, text="", font=("Helvetica", 12), fg="gray", bg="white")
-status_label.pack(pady=5)
-
-root.mainloop()
+if st.button("🚀 ابدأ الجلسة"):
+    if total_study_min == 0:
+        st.error("مدة الدراسة يجب أن تكون أكثر من صفر!")
+    else:
+        countdown(total_study_min, "الدراسة")
+        if total_break_min > 0:
+            countdown(total_break_min, "البريك")
+        st.success("🎉 انتهت الجلسة! ممتاز 👏")
